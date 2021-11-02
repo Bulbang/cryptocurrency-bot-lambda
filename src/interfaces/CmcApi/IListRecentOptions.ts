@@ -1,4 +1,4 @@
 export interface IListRecentOptions {
-  start?:string
-  limit?:string
+  start:string
+  limit:string
 }

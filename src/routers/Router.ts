@@ -3,88 +3,94 @@ import { Request, Response, Router } from 'express';
 import { Db } from 'mongodb';
 import { BotApiController } from '../controllers/BotApiController';
 import { CommandController } from '../controllers/CommandController';
+import { IWebhookData } from '../interfaces/IWebhookData';
 
 export const createRouter = (token: string, db: Db) => {
   const router = Router();
 
   router.post(`/webhook/${token}`, (req: Request, res: Response) => {
-    let id: string; let username: string; let text: string; let
-      messageId: string;
-    let isCallbackQuery = false;
+    let webhookData: IWebhookData;
 
     if (req.body.message?.chat) {
-      id = req.body.message.chat.id;
-      username = req.body.message.chat.username;
-      text = req.body.message.text;
+      webhookData = {
+        id: req.body.message.chat.id,
+        username: req.body.message.chat.username,
+        text: req.body.message.text,
+      };
     } else {
-      messageId = req.body.callback_query.message.message_id;
-      id = req.body.callback_query.from.id;
-      username = req.body.callback_query.from.username;
-      text = req.body.callback_query.data;
-      isCallbackQuery = true;
+      webhookData = {
+        messageId: req.body.callback_query.message.message_id,
+        id: req.body.callback_query.from.id,
+        username: req.body.callback_query.from.username,
+        text: req.body.callback_query.data,
+      };
     }
 
-    const [command, parameter] = text.trim().split(/\s+/);
+    const [command, parameter] = webhookData.text.trim().split(/\s+/);
     switch (command) {
       case '/start':
-        CommandController.start(token, id, username);
+        CommandController.start(token, webhookData.id, webhookData.username);
         break;
 
       case '/help':
-        CommandController.help(token, id);
+        CommandController.help(token, webhookData.id);
         break;
 
       case '/listRecent':
-        CommandController.listRecent(token, id, { limit: '25' });
+        CommandController.listRecent(token, webhookData.id, { limit: '25' });
         break;
 
       case command.match(/^\/[A-Z]+$/) ? command : undefined:
-        CommandController.currency(token, id, db, {
+        CommandController.getCurrency(token, webhookData.id, db, {
           symbol: command.replace('/', ''),
         });
         break;
 
       case '/addToFavorite':
         if (parameter) {
-          if (isCallbackQuery) {
-            CommandController.addToFavorite(token, id, parameter, db, {
-              chat_id: id,
-              message_id: messageId!,
+          if (webhookData.messageId) {
+            CommandController.addToFavorite(token, webhookData.id, parameter, db, {
+              chat_id: webhookData.id,
+              message_id: webhookData.messageId,
             });
           } else {
-            CommandController.addToFavorite(token, id, parameter, db);
+            CommandController.addToFavorite(token, webhookData.id, parameter, db);
           }
         } else {
           BotApiController.sendMessage(token, {
-            chat_id: id,
+            chat_id: webhookData.id,
             text: `Sorry, but for ${command} need parameter \n(ex. '${command} BTC')`,
           });
         }
         break;
 
       case '/listFavorite':
-        CommandController.listFavorite(token, id, db);
+        CommandController.listFavorite(token, webhookData.id, db);
         break;
 
       case '/deleteFavorite':
         if (parameter) {
-          if (isCallbackQuery) {
-            CommandController.deleteFavorite(token, id, parameter, db, {
-              chat_id: id,
-              message_id: messageId!,
+          if (webhookData.messageId) {
+            CommandController.deleteFavorite(token, webhookData.id, parameter, db, {
+              chat_id: webhookData.id,
+              message_id: webhookData.messageId,
             });
           } else {
-            CommandController.deleteFavorite(token, id, parameter, db);
+            CommandController.deleteFavorite(token, webhookData.id, parameter, db);
           }
         } else {
           BotApiController.sendMessage(token, {
-            chat_id: id,
+            chat_id: webhookData.id,
             text: `Sorry, but for ${command} need parameter \n(ex. '${command} BTC')`,
           });
         }
         break;
 
       default:
+        BotApiController.sendMessage(token, {
+          chat_id: webhookData.id,
+          text: 'Sorry, but i don\'t know this command. Type /help to see list of commands',
+        });
         break;
     }
 

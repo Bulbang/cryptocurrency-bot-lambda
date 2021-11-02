@@ -1,3 +1,4 @@
+import { badImplementation } from '@hapi/boom';
 import Express from 'express';
 import { MongoClient } from 'mongodb';
 import { BotApiController } from './controllers/BotApiController';
@@ -24,22 +25,21 @@ const start = async () => {
     await client.connect();
     const db = client.db('TelegramUsersData');
     app.use(createRouter(TOKEN, db));
-    app.listen(PORT, async () => {
+    return app.listen(PORT, async () => {
       await BotApiController.setWebhook(
         `${SERVER_URL}/webhook/${TOKEN}`,
         TOKEN,
       );
     });
-    return 0;
   } catch (e) {
-    return 1;
+    return badImplementation('Start failed');
   }
 };
 
 start();
 
-process.on('SIGINT', () => {
-  BotApiController.deleteWebhook(TOKEN);
+process.on('SIGINT', async () => {
+  await BotApiController.deleteWebhook(TOKEN);
   client.close();
   process.exit();
 });

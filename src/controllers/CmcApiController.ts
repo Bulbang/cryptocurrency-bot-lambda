@@ -1,9 +1,10 @@
-import axios from 'axios';
+import { boomify } from '@hapi/boom';
+import axios, { AxiosError } from 'axios';
 import { IListRecentOptions } from '../interfaces/CmcApi/IListRecentOptions';
 import { IMetadataOptions } from '../interfaces/CmcApi/IMetadataOptions';
 
 export class CmcApiController {
-  static async listRecent(options: IListRecentOptions) {
+  static async listRecent(options: Partial<IListRecentOptions>) {
     try {
       const target = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest';
       const responce = await axios.get(target, {
@@ -15,7 +16,8 @@ export class CmcApiController {
 
       return responce.data.data;
     } catch (error) {
-      return undefined;
+      const err = error as AxiosError;
+      return boomify(err, { statusCode: err.response!.status });
     }
   }
 

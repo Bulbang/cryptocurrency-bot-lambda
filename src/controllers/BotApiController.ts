@@ -1,4 +1,5 @@
-import axios from 'axios';
+import { boomify } from '@hapi/boom';
+import axios, { AxiosError } from 'axios';
 import { IDeleteMessageOptions } from '../interfaces/BotAPI/IDeleteMessageOptions';
 import { ISendMessageOptions } from '../interfaces/BotAPI/ISendMessageOptions';
 
@@ -10,7 +11,8 @@ export class BotApiController {
       );
       return responce.data;
     } catch (error) {
-      return undefined;
+      const err = error as AxiosError;
+      return boomify(err, { statusCode: err.response!.status });
     }
   }
 
@@ -21,7 +23,8 @@ export class BotApiController {
       );
       return responce.data;
     } catch (error) {
-      return undefined;
+      const err = error as AxiosError;
+      return boomify(err, { statusCode: err.response!.status });
     }
   }
 
@@ -33,7 +36,8 @@ export class BotApiController {
       );
       return responce.data;
     } catch (error) {
-      return undefined;
+      const err = error as AxiosError;
+      return boomify(err, { statusCode: err.response!.status });
     }
   }
 
@@ -45,7 +49,8 @@ export class BotApiController {
       );
       return responce.data;
     } catch (error) {
-      return undefined;
+      const err = error as AxiosError;
+      return boomify(err, { statusCode: err.response!.status });
     }
   }
 }
