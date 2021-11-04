@@ -11,25 +11,25 @@ import { CmcApiController } from './CmcApiController';
 export class CommandController {
   static async start(token: string, id: string, username: string) {
     try {
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id?.toString(),
         text: `Welcome to CryptocurrencyBot ${username}!\nType /help to see list of commands`,
       });
     } catch (error) {
       const err = error as AxiosError;
-      return boomify(err, { statusCode: err.response!.status });
+      throw boomify(err, { statusCode: err.response!.status });
     }
   }
 
   static async help(token: string, id: string) {
     try {
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id?.toString()!,
         text: '/listRecent - Shows most popular currencies\n\n/{currency} (ex. /BTC) - Shows information about currency\n\n/addToFavorite {currency} - Adds chosen currency to favorite\n\n/listFavorite - Shows list of your favorite currencies\n\n/deleteFavorite {currency} - Removes chosen currency from your favorite list',
       });
     } catch (error) {
       const err = error as AxiosError;
-      return boomify(err, { statusCode: err.response!.status });
+      throw boomify(err, { statusCode: err.response!.status });
     }
   }
 
@@ -45,7 +45,7 @@ export class CommandController {
         message += `${index + 1}. /${currency.symbol} - ${currency.name}\n`;
       });
 
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id,
         text: message,
       });
@@ -83,7 +83,7 @@ export class CommandController {
         .collection('usersFavoriteList')
         .findOne({ userId: id });
       if (candidate?.favorite.includes(response.symbol)) {
-        return await BotApiController.sendMessage(token, {
+        return  BotApiController.sendMessage(token, {
           chat_id: id,
           text: message,
           reply_markup: {
@@ -98,7 +98,7 @@ export class CommandController {
           },
         });
       }
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id,
         text: message,
         reply_markup: {
@@ -129,7 +129,7 @@ export class CommandController {
   ) {
     try {
       if (!(await CmcApiController.getMetadata({ symbol }))) {
-        return await BotApiController.sendMessage(token, {
+        return  BotApiController.sendMessage(token, {
           chat_id: id,
           text: `Invalid Currency code: ${symbol}`,
         });
@@ -152,19 +152,19 @@ export class CommandController {
             },
           },
         );
-        return await BotApiController.sendMessage(token, {
+        return  BotApiController.sendMessage(token, {
           chat_id: id,
           text: `${symbol} was successfully added to your list of favorite currencies`,
         });
       } if (candidate && candidate.favorite.includes(symbol)) {
-        return await BotApiController.sendMessage(token, {
+        return  BotApiController.sendMessage(token, {
           chat_id: id,
           text: `${symbol} includes in your list of favorite currencies`,
         });
       }
       const newUser: IDbSchema = { userId: id, favorite: [symbol] };
       await collection.insertOne(newUser);
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id,
         text: `${symbol} was successfully added to your list of favorite currencies`,
       });
@@ -183,7 +183,7 @@ export class CommandController {
 
       if (candidate) {
         if (!candidate.favorite.length) {
-          return await BotApiController.sendMessage(token, {
+          return  BotApiController.sendMessage(token, {
             chat_id: id,
             text: 'Your list of favorite currencies is empty',
           });
@@ -192,12 +192,12 @@ export class CommandController {
         candidate.favorite.forEach((currency: string, index: number) => {
           outputMessage += `${index + 1}. /${currency}\n`;
         });
-        return await BotApiController.sendMessage(token, {
+        return  BotApiController.sendMessage(token, {
           chat_id: id,
           text: outputMessage,
         });
       }
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id,
         text: 'Your list of favorite currencies is empty',
       });
@@ -227,7 +227,7 @@ export class CommandController {
 
       if (candidate) {
         if (!candidate.favorite.includes(symbol)) {
-          return await BotApiController.sendMessage(token, {
+          return  BotApiController.sendMessage(token, {
             chat_id: id,
             text: `${symbol} not included in your list of favorite currencies`,
           });
@@ -243,12 +243,12 @@ export class CommandController {
             },
           },
         );
-        return await BotApiController.sendMessage(token, {
+        return  BotApiController.sendMessage(token, {
           chat_id: id,
           text: `${symbol} was successfully removed to your list of favorite currencies`,
         });
       }
-      return await BotApiController.sendMessage(token, {
+      return  BotApiController.sendMessage(token, {
         chat_id: id,
         text: 'Your list of favorite currencies is empty',
       });

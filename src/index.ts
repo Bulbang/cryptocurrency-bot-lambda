@@ -24,7 +24,7 @@ const start = async () => {
   try {
     await client.connect();
     const db = client.db('TelegramUsersData');
-    app.use(createRouter(TOKEN, db));
+    app.use(await createRouter(TOKEN, db));
     return app.listen(PORT, async () => {
       await BotApiController.setWebhook(
         `${SERVER_URL}/webhook/${TOKEN}`,
@@ -32,7 +32,7 @@ const start = async () => {
       );
     });
   } catch (e) {
-    return badImplementation('Start failed');
+    throw badImplementation('Start failed');
   }
 };
 

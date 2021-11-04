@@ -17,7 +17,7 @@ export class CmcApiController {
       return responce.data.data;
     } catch (error) {
       const err = error as AxiosError;
-      return boomify(err, { statusCode: err.response!.status });
+      throw boomify(err, { statusCode: err.response!.status });
     }
   }
 
