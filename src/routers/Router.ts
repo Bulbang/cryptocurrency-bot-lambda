@@ -10,22 +10,22 @@ export const createRouter = async (token: string, db: Db) => {
   const router = Router();
 
   router.post(`/webhook/${token}`, async (req: Request, res: Response) => {
-    let webhookData: IWebhookData;
+    if (!req.body.message?.chat && !req.body.callback_query) {
+      return res.send();
+    }
 
-    if (req.body.message?.chat) {
-      webhookData = {
+    const webhookData: IWebhookData = req.body.message?.chat
+      ? {
         id: req.body.message.chat.id,
         username: req.body.message.chat.username,
         text: req.body.message.text,
-      };
-    } else {
-      webhookData = {
+      }
+      : {
         messageId: req.body.callback_query.message.message_id,
         id: req.body.callback_query.from.id,
         username: req.body.callback_query.from.username,
         text: req.body.callback_query.data,
       };
-    }
 
     const [command, parameter] = webhookData.text.trim().split(/\s+/);
     try {
@@ -55,26 +55,24 @@ export const createRouter = async (token: string, db: Db) => {
           break;
 
         case '/addToFavorite':
-          if (parameter) {
-            if (webhookData.messageId) {
-              await CommandController.addToFavorite(
-                token,
-                webhookData.id,
-                parameter,
-                db,
-                {
-                  chat_id: webhookData.id,
-                  message_id: webhookData.messageId,
-                },
-              );
-            } else {
-              await CommandController.addToFavorite(
-                token,
-                webhookData.id,
-                parameter,
-                db,
-              );
-            }
+          if (parameter && webhookData.messageId) {
+            await CommandController.addToFavorite(
+              token,
+              webhookData.id,
+              parameter,
+              db,
+              {
+                chat_id: webhookData.id,
+                message_id: webhookData.messageId,
+              },
+            );
+          } else if (parameter && !webhookData.messageId) {
+            await CommandController.addToFavorite(
+              token,
+              webhookData.id,
+              parameter,
+              db,
+            );
           } else {
             await BotApiController.sendMessage(token, {
               chat_id: webhookData.id,
@@ -88,26 +86,24 @@ export const createRouter = async (token: string, db: Db) => {
           break;
 
         case '/deleteFavorite':
-          if (parameter) {
-            if (webhookData.messageId) {
-              await CommandController.deleteFavorite(
-                token,
-                webhookData.id,
-                parameter,
-                db,
-                {
-                  chat_id: webhookData.id,
-                  message_id: webhookData.messageId,
-                },
-              );
-            } else {
-              await CommandController.deleteFavorite(
-                token,
-                webhookData.id,
-                parameter,
-                db,
-              );
-            }
+          if (parameter && webhookData.messageId) {
+            await CommandController.deleteFavorite(
+              token,
+              webhookData.id,
+              parameter,
+              db,
+              {
+                chat_id: webhookData.id,
+                message_id: webhookData.messageId,
+              },
+            );
+          } else if (parameter && !webhookData.messageId) {
+            await CommandController.deleteFavorite(
+              token,
+              webhookData.id,
+              parameter,
+              db,
+            );
           } else {
             await BotApiController.sendMessage(token, {
               chat_id: webhookData.id,
@@ -126,7 +122,7 @@ export const createRouter = async (token: string, db: Db) => {
 
       return res.send();
     } catch (e) {
-      throw badImplementation("One of routs doesn`t work");
+      throw badImplementation('One of routs doesn`t work');
     }
   });
 
