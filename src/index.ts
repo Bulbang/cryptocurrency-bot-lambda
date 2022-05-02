@@ -1,45 +1,44 @@
-import { badImplementation } from '@hapi/boom';
-import Express from 'express';
-import { MongoClient } from 'mongodb';
-import { BotApiController } from './controllers/BotApiController';
-import { createRouter } from './routers/Router';
+import { MongoClient } from 'mongodb'
+import { CmcApi } from './api/CmcApi'
+import { CommandController } from './controllers/CommandController'
+import { Bot } from './routers/Bot'
 
-require('dotenv').config();
+require('dotenv').config()
 
-const {
-  TOKEN, PORT, SERVER_URL, DB_URI, CMC_API_KEY,
-} = process.env;
+const bot = new Bot(process.env.TOKEN!, +process.env.PORT!)
+const client = new MongoClient(process.env.DB_URI!)
+const commandController = new CommandController(
+    new CmcApi(),
+    client.db('TelegramUsersData'),
+)
 
-if (!TOKEN || !PORT || !SERVER_URL || !DB_URI || !CMC_API_KEY) {
-  throw new Error('Some config data is absent');
-}
+bot.command('/start', commandController.start)
 
-const app = Express();
+bot.command('/help', commandController.help)
 
-app.use(Express.json());
+bot.command('/listRecent', commandController.listRecent)
 
-const client = new MongoClient(DB_URI);
+bot.command(/^\/[A-Z]+$/, commandController.getCurrency)
 
-const start = async () => {
-  try {
-    await client.connect();
-    const db = client.db('TelegramUsersData');
-    app.use(await createRouter(TOKEN, db));
-    return app.listen(PORT, async () => {
-      await BotApiController.setWebhook(
-        `${SERVER_URL}/webhook/${TOKEN}`,
-        TOKEN,
-      );
-    });
-  } catch (e) {
-    throw badImplementation('Start failed');
-  }
-};
+bot.command('/addToFavorite', commandController.addToFavorite)
 
-start();
+bot.command('/listFavorite', commandController.listFavorite)
+
+bot.command('/deleteFavorite', commandController.deleteFavorite)
+
+bot.default(async (bot) => {
+    return await bot.sendMessage(
+        "Sorry, but i don't know this command. Type /help to see list of commands",
+    )
+})
+
+bot.run(async () => {
+    await client.connect()
+})
 
 process.on('SIGINT', async () => {
-  await BotApiController.deleteWebhook(TOKEN);
-  client.close();
-  process.exit();
-});
+    await bot.stop(async () => {
+        await client.close()
+    })
+    process.exit()
+})
